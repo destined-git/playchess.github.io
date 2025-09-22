@@ -1,0 +1,668 @@
+/* Reset and Base Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Roboto', sans-serif;
+    background: #312e2b;
+    min-height: 100vh;
+    color: #333;
+    overflow-x: auto;
+}
+
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* Header Styles */
+.game-header {
+    text-align: center;
+    margin-bottom: 30px;
+    color: #eeeeee;
+}
+
+.game-header h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 10px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+.game-header p {
+    font-size: 1.2rem;
+    opacity: 0.9;
+}
+
+/* Game Layout */
+.game-layout {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 30px;
+    align-items: start;
+}
+
+@media (max-width: 1024px) {
+    .game-layout {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+}
+
+/* Game Info Panel */
+.game-info {
+    background: #262421;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    border: 1px solid #3d3a37;
+}
+
+.player-info {
+    margin-bottom: 25px;
+}
+
+.player {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    transition: all 0.2s ease;
+    background: #1a1916;
+    border: 1px solid #3d3a37;
+}
+
+.player.active {
+    background: #769656;
+    color: white;
+    border-color: #81b64c;
+    transform: scale(1.02);
+}
+
+.white-player {
+    color: #eeeeee;
+}
+
+.black-player {
+    color: #eeeeee;
+}
+
+.player-avatar {
+    font-size: 2rem;
+    margin-right: 15px;
+}
+
+.player-details h3 {
+    font-weight: 500;
+    margin-bottom: 5px;
+}
+
+.player-details p {
+    font-size: 0.9rem;
+    opacity: 0.8;
+}
+
+.game-status {
+    text-align: center;
+    padding: 12px;
+    background: #769656;
+    color: white;
+    border-radius: 6px;
+    margin: 12px 0;
+    border: 1px solid #81b64c;
+}
+
+.turn-indicator {
+    font-weight: 500;
+    margin-bottom: 5px;
+}
+
+.game-timer {
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+/* Game Controls */
+.game-controls {
+    margin-bottom: 25px;
+}
+
+.btn {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-bottom: 10px;
+}
+
+.btn-primary {
+    background: #769656;
+    color: white;
+    border: 1px solid #81b64c;
+}
+
+.btn-primary:hover {
+    background: #81b64c;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(118, 150, 86, 0.4);
+}
+
+.btn-secondary {
+    background: #3d3a37;
+    color: #eeeeee;
+    border: 1px solid #4a4641;
+}
+
+.btn-secondary:hover {
+    background: #4a4641;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(61, 58, 55, 0.4);
+}
+
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+/* Difficulty Selector */
+.difficulty-selector {
+    margin-bottom: 20px;
+}
+
+.difficulty-selector label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #eeeeee;
+}
+
+.difficulty-selector select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #3d3a37;
+    border-radius: 6px;
+    font-size: 1rem;
+    background: #1a1916;
+    color: #eeeeee;
+}
+
+/* Color Selector */
+.color-selector {
+    margin-bottom: 25px;
+}
+
+.color-selector label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #eeeeee;
+}
+
+.color-selector select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #3d3a37;
+    border-radius: 6px;
+    font-size: 1rem;
+    background: #1a1916;
+    color: #eeeeee;
+}
+
+/* Move History */
+.move-history h3 {
+    margin-bottom: 15px;
+    color: #eeeeee;
+}
+
+.moves-container {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #3d3a37;
+    border-radius: 6px;
+    padding: 10px;
+    background: #1a1916;
+}
+
+.move-item {
+    padding: 4px 8px;
+    margin-bottom: 3px;
+    background: #262421;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 0.9rem;
+    color: #eeeeee;
+    border: 1px solid #3d3a37;
+}
+
+/* Chessboard Container */
+.chessboard-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: #262421;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    border: 1px solid #3d3a37;
+}
+
+.board-wrapper {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.coordinates-vertical {
+    display: flex;
+    flex-direction: column;
+    margin-right: 10px;
+}
+
+.coordinates-vertical .coord {
+    height: 70px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 500;
+    color: #a0a0a0;
+    font-size: 14px;
+}
+
+.board-main {
+    display: flex;
+    flex-direction: column;
+}
+
+.chessboard {
+    display: grid;
+    grid-template-columns: repeat(8, 70px);
+    grid-template-rows: repeat(8, 70px);
+    border: 3px solid #8b4513;
+    border-radius: 4px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    background: #f0d9b5;
+}
+
+.square {
+    width: 70px;
+    height: 70px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3.2rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    position: relative;
+    user-select: none;
+}
+
+.square.light {
+    background: #f0d9b5;
+}
+
+.square.dark {
+    background: #b58863;
+}
+
+.square.light.highlighted {
+    background: #f7ec74 !important;
+}
+
+.square.dark.highlighted {
+    background: #baca2b !important;
+}
+
+.square:hover {
+    box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.4);
+}
+
+.square.has-piece:hover {
+    box-shadow: inset 0 0 0 3px rgba(255, 255, 0, 0.7);
+}
+
+.square.selected {
+    box-shadow: inset 0 0 0 3px #f7ec74;
+}
+
+.square.light.selected {
+    background: #f7ec74 !important;
+}
+
+.square.dark.selected {
+    background: #baca2b !important;
+}
+
+.square.valid-move::after {
+    content: '';
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    background: rgba(0, 0, 0, 0.15);
+    border-radius: 50%;
+    pointer-events: none;
+    border: 2px solid rgba(0, 0, 0, 0.2);
+}
+
+.square.capture-move::after {
+    content: '';
+    position: absolute;
+    width: 62px;
+    height: 62px;
+    border: 4px solid rgba(255, 0, 0, 0.6);
+    border-radius: 50%;
+    pointer-events: none;
+    background: transparent;
+}
+
+.square.last-move.light {
+    background: #cdd26a !important;
+}
+
+.square.last-move.dark {
+    background: #aaa23a !important;
+}
+
+.coordinates-horizontal {
+    display: flex;
+    margin-top: 10px;
+}
+
+.coordinates-horizontal .coord {
+    width: 70px;
+    text-align: center;
+    font-weight: 500;
+    color: #a0a0a0;
+    font-size: 14px;
+}
+
+/* Chess Pieces */
+.piece {
+    font-size: 3.2rem;
+    transition: all 0.15s ease;
+    cursor: grab;
+    user-select: none;
+    display: block;
+    line-height: 1;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+}
+
+.piece:hover {
+    transform: scale(1.05);
+}
+
+.piece:active {
+    cursor: grabbing;
+}
+
+.piece.dragging {
+    opacity: 0.8;
+    transform: scale(1.1);
+    z-index: 1000;
+    pointer-events: none;
+    position: fixed;
+    transition: none;
+}
+
+.piece.white {
+    color: #ffffff;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.8), 0 0 3px rgba(0,0,0,0.5);
+}
+
+.piece.black {
+    color: #000000;
+    text-shadow: 1px 1px 2px rgba(255,255,255,0.3);
+}
+
+/* Captured Pieces */
+.captured-pieces {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    max-width: 600px;
+    margin-top: 20px;
+}
+
+.captured-white, .captured-black {
+    flex: 1;
+    margin: 0 10px;
+}
+
+.captured-pieces h4 {
+    text-align: center;
+    margin-bottom: 10px;
+    color: #a0a0a0;
+}
+
+.pieces-container {
+    min-height: 60px;
+    border: 1px dashed #3d3a37;
+    border-radius: 6px;
+    padding: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    background: #1a1916;
+}
+
+.captured-piece {
+    font-size: 1.5rem;
+    margin: 2px;
+    opacity: 0.7;
+}
+
+/* Game Messages */
+.game-messages {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.status-message {
+    background: #262421;
+    color: #eeeeee;
+    padding: 12px 20px;
+    border-radius: 6px;
+    display: inline-block;
+    font-weight: 500;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+    border: 1px solid #3d3a37;
+}
+
+.status-message.check {
+    background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+    color: white;
+}
+
+.status-message.checkmate {
+    background: linear-gradient(45deg, #ff4757, #ff3838);
+    color: white;
+    animation: pulse 1s infinite;
+}
+
+.status-message.stalemate {
+    background: linear-gradient(45deg, #ffa726, #ff9800);
+    color: white;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+/* Thinking Indicator */
+.thinking-indicator {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0,0,0,0.8);
+    color: white;
+    padding: 20px;
+    border-radius: 10px;
+    display: none;
+    z-index: 1000;
+}
+
+.thinking-indicator.show {
+    display: block;
+}
+
+.spinner {
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #3498db;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 10px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes moveHighlight {
+    0% { 
+        transform: scale(1); 
+        box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7);
+    }
+    50% { 
+        transform: scale(1.05); 
+        box-shadow: 0 0 0 8px rgba(255, 255, 255, 0.3);
+    }
+    100% { 
+        transform: scale(1); 
+        box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+    }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .container {
+        padding: 10px;
+    }
+    
+    .game-header h1 {
+        font-size: 2rem;
+    }
+    
+    .chessboard {
+        grid-template-columns: repeat(8, 55px);
+        grid-template-rows: repeat(8, 55px);
+    }
+    
+    .square {
+        width: 55px;
+        height: 55px;
+        font-size: 2.5rem;
+    }
+    
+    .coordinates-vertical .coord {
+        height: 55px;
+        font-size: 12px;
+    }
+    
+    .coordinates-horizontal .coord {
+        width: 55px;
+        font-size: 12px;
+    }
+    
+    .game-info {
+        padding: 15px;
+    }
+    
+    .captured-pieces {
+        flex-direction: column;
+    }
+    
+    .captured-white, .captured-black {
+        margin: 5px 0;
+    }
+}
+
+/* Animation for piece movement */
+@keyframes movepiece {
+    from {
+        transform: translate(0, 0);
+    }
+    to {
+        transform: translate(var(--move-x), var(--move-y));
+    }
+}
+
+.piece.moving {
+    animation: movepiece 0.3s ease-in-out;
+}
+
+/* Promotion Dialog */
+.promotion-dialog {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    border-radius: 15px;
+    padding: 25px;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+    z-index: 2000;
+    display: none;
+}
+
+.promotion-dialog.show {
+    display: block;
+}
+
+.promotion-dialog h3 {
+    text-align: center;
+    margin-bottom: 20px;
+    color: #333;
+}
+
+.promotion-pieces {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+}
+
+.promotion-piece {
+    font-size: 3rem;
+    padding: 15px;
+    border: 2px solid #ddd;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.promotion-piece:hover {
+    border-color: #4CAF50;
+    transform: scale(1.1);
+}
+
+/* Overlay */
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    z-index: 1500;
+    display: none;
+}
+
+.overlay.show {
+    display: block;
+}
