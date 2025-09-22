@@ -570,6 +570,80 @@ class ChessUI {
         
         // Play game end sound
         this.playGameEndSound();
+        
+        // Show game over dialog
+        setTimeout(() => {
+            this.showGameOverDialog();
+        }, 1000);
+    }
+
+    // Show game over dialog with result and rematch option
+    showGameOverDialog() {
+        let title = '';
+        let message = '';
+        let resultClass = '';
+        
+        switch (this.game.gameState) {
+            case 'checkmate':
+                const winner = this.game.currentPlayer === 'WHITE' ? 'BLACK' : 'WHITE';
+                if (winner === this.playerColor) {
+                    title = '🎉 You Won!';
+                    message = 'Congratulations! You checkmated the AI!';
+                    resultClass = 'victory';
+                } else {
+                    title = '😔 You Lost!';
+                    message = 'The AI checkmated you. Better luck next time!';
+                    resultClass = 'defeat';
+                }
+                break;
+            case 'stalemate':
+                title = '🤝 Draw!';
+                message = 'The game ended in a stalemate. No one wins!';
+                resultClass = 'draw';
+                break;
+            case 'draw':
+                title = '🤝 Draw!';
+                message = 'The game ended in a draw due to insufficient material or 50-move rule.';
+                resultClass = 'draw';
+                break;
+        }
+
+        const dialog = document.createElement('div');
+        dialog.className = `game-over-dialog show ${resultClass}`;
+        dialog.innerHTML = `
+            <div class="dialog-content">
+                <h2>${title}</h2>
+                <p>${message}</p>
+                <div class="dialog-buttons">
+                    <button id="rematch-btn" class="btn primary">Play Again</button>
+                    <button id="close-dialog-btn" class="btn secondary">Close</button>
+                </div>
+            </div>
+        `;
+
+        const overlay = document.createElement('div');
+        overlay.className = 'overlay show';
+
+        document.body.appendChild(overlay);
+        document.body.appendChild(dialog);
+
+        // Add event listeners
+        document.getElementById('rematch-btn').addEventListener('click', () => {
+            document.body.removeChild(dialog);
+            document.body.removeChild(overlay);
+            this.newGame();
+        });
+
+        document.getElementById('close-dialog-btn').addEventListener('click', () => {
+            document.body.removeChild(dialog);
+            document.body.removeChild(overlay);
+        });
+
+        // Close on overlay click
+        overlay.addEventListener('click', () => {
+            document.body.removeChild(dialog);
+            document.body.removeChild(overlay);
+        });
     }
 
     // Start game timer
@@ -592,3 +666,4 @@ class ChessUI {
         console.log('Game end sound played');
     }
 }
+
