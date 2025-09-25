@@ -1,4 +1,6 @@
 // Main Application Entry Point
+import { ChessUI } from './chess-ui.js';
+
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize the chess game UI
     const chessUI = new ChessUI();

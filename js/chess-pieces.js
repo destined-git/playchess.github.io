@@ -132,10 +132,10 @@ class ChessPiece {
     }
 
     // Get all possible moves for this piece
-    getPossibleMoves(board) {
+    getPossibleMoves(board, gameContext = {}) {
         switch (this.type) {
             case 'PAWN':
-                return this.getPawnMoves(board);
+                return this.getPawnMoves(board, gameContext.enPassantTarget);
             case 'ROOK':
                 return this.getRookMoves(board);
             case 'KNIGHT':
@@ -145,17 +145,18 @@ class ChessPiece {
             case 'QUEEN':
                 return this.getQueenMoves(board);
             case 'KING':
-                return this.getKingMoves(board);
+                return this.getKingMoves(board, gameContext.canCastleKingSide, gameContext.canCastleQueenSide);
             default:
                 return [];
         }
     }
 
-    // Pawn movement logic
-    getPawnMoves(board) {
+    // Pawn movement logic (including en passant)
+    getPawnMoves(board, enPassantTarget = null) {
         const moves = [];
         const direction = this.color === 'WHITE' ? -1 : 1;
         const startRow = this.color === 'WHITE' ? 6 : 1;
+        const enPassantRow = this.color === 'WHITE' ? 3 : 4;
         
         // Forward move
         const newRow = this.row + direction;
@@ -175,6 +176,17 @@ class ChessPiece {
                 const targetPiece = board[newRow][newCol];
                 if (targetPiece && targetPiece.color !== this.color) {
                     moves.push([newRow, newCol]);
+                }
+            }
+        }
+        
+        // En passant capture
+        if (enPassantTarget && this.row === enPassantRow) {
+            const [targetRow, targetCol] = enPassantTarget;
+            if (Math.abs(targetCol - this.col) === 1) {
+                // Check if the en passant square is the correct one
+                if (targetRow === this.row + direction) {
+                    moves.push([targetRow, targetCol]);
                 }
             }
         }
@@ -264,8 +276,8 @@ class ChessPiece {
         return [...this.getRookMoves(board), ...this.getBishopMoves(board)];
     }
 
-    // King movement logic
-    getKingMoves(board) {
+    // King movement logic (including castling)
+    getKingMoves(board, canCastleKingSide = false, canCastleQueenSide = false) {
         const moves = [];
         const kingMoves = [
             [-1, -1], [-1, 0], [-1, 1],
@@ -282,6 +294,18 @@ class ChessPiece {
                 if (!targetPiece || targetPiece.color !== this.color) {
                     moves.push([newRow, newCol]);
                 }
+            }
+        }
+        
+        // Add castling moves if allowed
+        if (!this.hasMoved && this.col === 4) {
+            // King-side castling
+            if (canCastleKingSide) {
+                moves.push([this.row, 6]);
+            }
+            // Queen-side castling
+            if (canCastleQueenSide) {
+                moves.push([this.row, 2]);
             }
         }
         
@@ -312,3 +336,7 @@ class ChessPiece {
         return cloned;
     }
 }
+
+// Classes and constants are available globally
+// Export for ES6 module compatibility (for unit tests)
+export { PIECES, PIECE_VALUES, POSITION_VALUES, ChessPiece };

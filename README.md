@@ -14,6 +14,7 @@ A beautiful and intelligent chess game built with HTML, CSS, and JavaScript feat
 - **Captured Pieces**: Visual display of captured pieces
 - **Game Timer**: Track game duration
 - **Touch Support**: Mobile-friendly drag and drop
+- **Comprehensive Testing**: Full test suite with 19+ unit tests
 
 ### AI Features
 - **Minimax Algorithm**: Advanced game tree search with alpha-beta pruning
@@ -124,6 +125,30 @@ The game tracks various statistics accessible via the browser console:
 Access with: `window.gameStats`
 
 ## 🛠️ Development
+
+### Testing
+The project includes a comprehensive test suite using Node.js built-in test runner:
+
+```bash
+# Run all tests
+npm test
+
+# Run tests in watch mode (re-runs on file changes)
+npm test:watch
+
+# Run tests with verbose output
+npm test:verbose
+```
+
+**Test Coverage:**
+- ✅ Basic piece movement (19 tests)
+- ✅ Castling (kingside and queenside)
+- ✅ En passant capture
+- ✅ Check detection
+- ✅ Game state management
+- ✅ Pawn promotion
+- ✅ Move validation
+- ✅ Player alternation
 
 ### Debugging
 Access game internals via browser console:

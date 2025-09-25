@@ -1,4 +1,7 @@
 // Chess AI using Minimax Algorithm with Alpha-Beta Pruning
+import { PIECE_VALUES } from './chess-pieces.js';
+import { ChessGame } from './chess-logic.js';
+
 class ChessAI {
     constructor(difficulty = 2) {
         this.difficulty = difficulty;
@@ -6,6 +9,7 @@ class ChessAI {
         this.transpositionTable = new Map();
         this.killerMoves = Array(10).fill(null).map(() => []);
         this.historyTable = {};
+        this.setDifficultyParameters(difficulty);
     }
 
     // Get search depth based on difficulty level
@@ -15,6 +19,7 @@ class ChessAI {
             case 2: return 3; // Medium
             case 3: return 4; // Hard
             case 4: return 5; // Expert
+            case 5: return 6; // Master
             default: return 3;
         }
     }
@@ -23,6 +28,43 @@ class ChessAI {
     setDifficulty(difficulty) {
         this.difficulty = difficulty;
         this.maxDepth = this.getDepthFromDifficulty(difficulty);
+        this.setDifficultyParameters(difficulty);
+        console.log(`AI difficulty set to ${difficulty} (depth: ${this.maxDepth}, time: ${this.timeLimit}ms, randomness: ${this.randomnessFactor})`);
+    }
+
+    // Set difficulty-specific parameters
+    setDifficultyParameters(difficulty) {
+        switch (difficulty) {
+            case 1: // Easy
+                this.timeLimit = 500;  // 0.5 seconds
+                this.randomnessFactor = 0.3; // 30% randomness in evaluation
+                this.moveRandomness = 0.4; // 40% chance to pick suboptimal move
+                break;
+            case 2: // Medium
+                this.timeLimit = 1000; // 1 second
+                this.randomnessFactor = 0.15; // 15% randomness
+                this.moveRandomness = 0.2; // 20% chance for suboptimal move
+                break;
+            case 3: // Hard
+                this.timeLimit = 2000; // 2 seconds
+                this.randomnessFactor = 0.05; // 5% randomness
+                this.moveRandomness = 0.1; // 10% chance for suboptimal move
+                break;
+            case 4: // Expert
+                this.timeLimit = 3000; // 3 seconds
+                this.randomnessFactor = 0.02; // 2% randomness
+                this.moveRandomness = 0.05; // 5% chance for suboptimal move
+                break;
+            case 5: // Master
+                this.timeLimit = 5000; // 5 seconds
+                this.randomnessFactor = 0; // No randomness
+                this.moveRandomness = 0; // Always best move
+                break;
+            default:
+                this.timeLimit = 1000;
+                this.randomnessFactor = 0.15;
+                this.moveRandomness = 0.2;
+        }
     }
 
     // Get the best move for the AI
@@ -31,6 +73,16 @@ class ChessAI {
         this.killerMoves = Array(10).fill(null).map(() => []);
         
         const startTime = Date.now();
+        
+        // For easy difficulties, sometimes pick a random move
+        if (this.moveRandomness > 0 && Math.random() < this.moveRandomness) {
+            const moves = this.getAllPossibleMoves(game);
+            if (moves.length > 0) {
+                const randomIndex = Math.floor(Math.random() * Math.min(moves.length, 5)); // Pick from top 5 moves
+                console.log(`AI chose random move (difficulty ${this.difficulty})`);
+                return moves[randomIndex];
+            }
+        }
         
         // First, check if we're in check and find all moves that get us out of check
         const aiColor = game.currentPlayer;
@@ -63,14 +115,24 @@ class ChessAI {
             }
         }
         
-        // If not in check or no moves found, use the normal minimax
-        const result = this.minimax(game, this.maxDepth, -Infinity, Infinity, true);
+        // If not in check or no moves found, use the normal minimax with time limit
+        const result = this.minimaxWithTimeLimit(game, this.maxDepth, -Infinity, Infinity, true, startTime);
         const endTime = Date.now();
         
-        console.log(`AI thinking time: ${endTime - startTime}ms`);
+        console.log(`AI thinking time: ${endTime - startTime}ms (limit: ${this.timeLimit}ms)`);
         console.log(`Evaluated position score: ${result.score}`);
         
         return result.move;
+    }
+
+    // Minimax with time limit
+    minimaxWithTimeLimit(game, depth, alpha, beta, isMaximizing, startTime) {
+        // Check time limit
+        if (Date.now() - startTime > this.timeLimit) {
+            return { score: this.evaluatePosition(game), move: null };
+        }
+        
+        return this.minimax(game, depth, alpha, beta, isMaximizing);
     }
 
     // Minimax algorithm with alpha-beta pruning
@@ -105,14 +167,13 @@ class ChessAI {
         for (const move of moves) {
             // Make the move
             const gameClone = this.cloneGame(game);
-            const moveSuccess = gameClone.makeMove(move.from[0], move.from[1], move.to[0], move.to[1]);
             
             if (!moveSuccess) continue;
 
             // Recursive call
             const result = this.minimax(gameClone, depth - 1, alpha, beta, !isMaximizing);
             const score = result.score;
-
+            
             if (isMaximizing) {
                 if (score > bestScore) {
                     bestScore = score;
@@ -449,3 +510,6 @@ class ChessAI {
         return bestMove;
     }
 }
+
+// Export for module compatibility
+export { ChessAI };

@@ -1,4 +1,6 @@
 // Chess Game Logic and Rules
+import { PIECES, ChessPiece } from './chess-pieces.js';
+
 class ChessGame {
     constructor() {
         this.board = this.initializeBoard();
@@ -46,7 +48,13 @@ class ChessGame {
             for (let c = 0; c < 8; c++) {
                 const piece = this.board[r][c];
                 if (piece && piece.color === attackingColor) {
-                    const moves = piece.getPossibleMoves(this.board);
+                    // For attack checking, we don't need special moves like castling
+                    const gameContext = {
+                        enPassantTarget: this.enPassantTarget,
+                        canCastleKingSide: false,
+                        canCastleQueenSide: false
+                    };
+                    const moves = piece.getPossibleMoves(this.board, gameContext);
                     if (moves.some(([moveRow, moveCol]) => moveRow === row && moveCol === col)) {
                         return true;
                     }
@@ -67,7 +75,13 @@ class ChessGame {
     getLegalMoves(piece) {
         if (!piece) return [];
         
-        const possibleMoves = piece.getPossibleMoves(this.board);
+        const gameContext = {
+            enPassantTarget: this.enPassantTarget,
+            canCastleKingSide: piece.type === 'KING' ? this.canCastle(piece.color, true) : false,
+            canCastleQueenSide: piece.type === 'KING' ? this.canCastle(piece.color, false) : false
+        };
+        
+        const possibleMoves = piece.getPossibleMoves(this.board, gameContext);
         const legalMoves = [];
         
         for (const [toRow, toCol] of possibleMoves) {
@@ -85,15 +99,35 @@ class ChessGame {
         if (!piece || piece.color !== this.currentPlayer) return false;
         
         // First check if the move is possible according to piece rules
-        const possibleMoves = piece.getPossibleMoves(this.board);
+        const gameContext = {
+            enPassantTarget: this.enPassantTarget,
+            canCastleKingSide: piece.type === 'KING' ? this.canCastle(piece.color, true) : false,
+            canCastleQueenSide: piece.type === 'KING' ? this.canCastle(piece.color, false) : false
+        };
+        
+        const possibleMoves = piece.getPossibleMoves(this.board, gameContext);
         const isPossible = possibleMoves.some(([moveRow, moveCol]) => moveRow === toRow && moveCol === toCol);
         if (!isPossible) return false;
+        
+        // Special handling for castling - already checked in canCastle
+        if (piece.type === 'KING' && Math.abs(toCol - fromCol) === 2) {
+            return true; // Castling legality is already verified in canCastle
+        }
         
         // Save original state
         const originalKingPositions = { ...this.kingPositions };
         const capturedPiece = this.board[toRow][toCol];
         const originalRow = piece.row;
         const originalCol = piece.col;
+        
+        // Handle en passant capture
+        let enPassantCapturedPawn = null;
+        if (piece.type === 'PAWN' && this.enPassantTarget && 
+            toRow === this.enPassantTarget[0] && toCol === this.enPassantTarget[1]) {
+            const captureRow = piece.color === 'WHITE' ? toRow + 1 : toRow - 1;
+            enPassantCapturedPawn = this.board[captureRow][toCol];
+            this.board[captureRow][toCol] = null;
+        }
         
         // Make the move temporarily
         this.board[toRow][toCol] = piece;
@@ -116,6 +150,12 @@ class ChessGame {
         piece.col = originalCol;
         this.kingPositions = originalKingPositions;
         
+        // Restore en passant captured pawn if necessary
+        if (enPassantCapturedPawn) {
+            const captureRow = piece.color === 'WHITE' ? toRow + 1 : toRow - 1;
+            this.board[captureRow][toCol] = enPassantCapturedPawn;
+        }
+        
         return isLegal;
     }
 
@@ -126,7 +166,16 @@ class ChessGame {
             return false;
         }
         
-        const capturedPiece = this.getPieceAt(toRow, toCol);
+        let capturedPiece = this.getPieceAt(toRow, toCol);
+        
+        // Handle en passant capture
+        if (piece.type === 'PAWN' && !capturedPiece && this.enPassantTarget &&
+            toRow === this.enPassantTarget[0] && toCol === this.enPassantTarget[1]) {
+            const captureRow = piece.color === 'WHITE' ? toRow + 1 : toRow - 1;
+            capturedPiece = this.board[captureRow][toCol];
+            this.board[captureRow][toCol] = null;
+        }
+        
         const moveNotation = this.getMoveNotation(piece, fromRow, fromCol, toRow, toCol, capturedPiece);
         
         // Handle captures
@@ -160,7 +209,7 @@ class ChessGame {
             this.handleCastling(fromRow, fromCol, toRow, toCol);
         }
         
-        // Handle en passant
+        // Update en passant target
         if (piece.type === 'PAWN' && Math.abs(toRow - fromRow) === 2) {
             this.enPassantTarget = [fromRow + (toRow - fromRow) / 2, fromCol];
         } else {
@@ -209,21 +258,30 @@ class ChessGame {
         const king = this.getPieceAt(row, 4);
         const rook = this.getPieceAt(row, kingSide ? 7 : 0);
         
-        if (!king || !rook || king.hasMoved || rook.hasMoved) return false;
+        // Check basic requirements
+        if (!king || king.type !== 'KING' || king.hasMoved) return false;
+        if (!rook || rook.type !== 'ROOK' || rook.hasMoved) return false;
         if (this.isInCheck(color)) return false;
         
-        const startCol = kingSide ? 5 : 1;
-        const endCol = kingSide ? 6 : 3;
-        
         // Check if squares between king and rook are empty
-        for (let col = startCol; col <= endCol; col++) {
-            if (this.getPieceAt(row, col)) return false;
+        if (kingSide) {
+            // King-side: check f and g files
+            if (this.getPieceAt(row, 5) || this.getPieceAt(row, 6)) return false;
+        } else {
+            // Queen-side: check b, c, and d files
+            if (this.getPieceAt(row, 1) || this.getPieceAt(row, 2) || this.getPieceAt(row, 3)) return false;
         }
         
         // Check if king passes through or ends up in check
         const oppositeColor = color === 'WHITE' ? 'BLACK' : 'WHITE';
-        for (let col = 4; col <= (kingSide ? 6 : 2); col++) {
-            if (this.isSquareUnderAttack(row, col, oppositeColor)) return false;
+        if (kingSide) {
+            // King-side: king moves from e to g, passing through f
+            if (this.isSquareUnderAttack(row, 5, oppositeColor) || 
+                this.isSquareUnderAttack(row, 6, oppositeColor)) return false;
+        } else {
+            // Queen-side: king moves from e to c, passing through d
+            if (this.isSquareUnderAttack(row, 3, oppositeColor) || 
+                this.isSquareUnderAttack(row, 2, oppositeColor)) return false;
         }
         
         return true;
@@ -427,3 +485,7 @@ class ChessGame {
         this.fullMoveNumber = 1;
     }
 }
+
+// ChessGame class is available globally
+// Export for ES6 module compatibility (for unit tests)
+export { ChessGame };

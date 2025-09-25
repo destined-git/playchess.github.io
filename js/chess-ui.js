@@ -1,20 +1,28 @@
 // Chess UI and Interaction Handler
+import { ChessGame } from './chess-logic.js';
+import { ChessAI } from './chess-ai.js';
+import { EnhancedChessAI } from './chess-ai-enhanced.js';
+
 class ChessUI {
-    constructor() {
-        this.game = new ChessGame();
-        this.ai = new ChessAI(2);
-        this.selectedSquare = null;
-        this.validMoves = [];
-        this.gameStartTime = null;
-        this.gameTimer = null;
-        this.playerColor = 'WHITE'; // Player's color
-        this.isPlayerTurn = true;
-        this.isThinking = false;
-        
-        this.initializeBoard();
-        this.setupEventListeners();
-        this.updateDisplay();
-    }
+  constructor() {
+    this.game = new ChessGame();
+    this.aiMode = 'enhanced'; // 'classic' or 'enhanced'
+    this.ai = this.aiMode === 'enhanced' ? new EnhancedChessAI(2) : new ChessAI(2);
+    this.selectedSquare = null;
+    this.validMoves = [];
+    this.gameStartTime = null;
+    this.gameTimer = null;
+    this.playerColor = 'WHITE'; // Player's color
+    this.isPlayerTurn = true;
+    this.isThinking = false;
+    this.moveHistory = [];
+    this.boardFlipped = false; // Track if board is flipped
+    
+    this.initializeBoard();
+    this.setupEventListeners();
+    this.updateDisplay();
+    this.flipBoard(); // Set initial board orientation
+  }
 
     // Initialize the visual chessboard
     initializeBoard() {
@@ -42,13 +50,14 @@ class ChessUI {
         this.updateBoardDisplay();
     }
 
-    // Setup event listeners for game controls
-    setupEventListeners() {
-        document.getElementById('new-game-btn').addEventListener('click', () => this.newGame());
-        document.getElementById('hint-btn').addEventListener('click', () => this.showHint());
-        document.getElementById('difficulty').addEventListener('change', (e) => this.changeDifficulty(e.target.value));
-        document.getElementById('player-color').addEventListener('change', (e) => this.changePlayerColor(e.target.value));
-    }
+  // Setup event listeners for game controls
+  setupEventListeners() {
+    document.getElementById('new-game-btn').addEventListener('click', () => this.newGame());
+    document.getElementById('hint-btn').addEventListener('click', () => this.showHint());
+    document.getElementById('difficulty').addEventListener('change', (e) => this.changeDifficulty(e.target.value));
+    document.getElementById('player-color').addEventListener('change', (e) => this.changePlayerColor(e.target.value));
+    document.getElementById('ai-mode')?.addEventListener('change', (e) => this.changeAIMode(e.target.value));
+  }
 
     // Handle square click events
     handleSquareClick(event) {
@@ -60,24 +69,25 @@ class ChessUI {
             target = target.closest('.square');
         }
         
-        const row = parseInt(target.dataset.row);
-        const col = parseInt(target.dataset.col);
-        const piece = this.game.getPieceAt(row, col);
+        const visualRow = parseInt(target.dataset.row);
+        const visualCol = parseInt(target.dataset.col);
+        const logical = this.getLogicalCoordinates(visualRow, visualCol);
+        const piece = this.game.getPieceAt(logical.row, logical.col);
 
         if (this.selectedSquare) {
             // Try to make a move
-            if (this.isValidMove(row, col)) {
-                this.makePlayerMove(this.selectedSquare.row, this.selectedSquare.col, row, col);
+            if (this.isValidMove(logical.row, logical.col)) {
+                this.makePlayerMove(this.selectedSquare.row, this.selectedSquare.col, logical.row, logical.col);
             } else if (piece && piece.color === this.playerColor) {
                 // Select a different piece
-                this.selectSquare(row, col);
+                this.selectSquare(logical.row, logical.col);
             } else {
                 // Deselect
                 this.deselectSquare();
             }
         } else if (piece && piece.color === this.playerColor) {
             // Select a piece
-            this.selectSquare(row, col);
+            this.selectSquare(logical.row, logical.col);
         }
     }
 
@@ -500,7 +510,9 @@ class ChessUI {
 
     // Get square element by coordinates
     getSquareElement(row, col) {
-        return document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+        // Convert logical coordinates to visual coordinates for DOM selection
+        const visual = this.getVisualCoordinates(row, col);
+        return document.querySelector(`[data-row="${visual.row}"][data-col="${visual.col}"]`);
     }
 
     // Start a new game
@@ -519,6 +531,7 @@ class ChessUI {
         });
         
         this.updateDisplay();
+        this.flipBoard(); // Ensure board is oriented correctly
         this.startGameTimer();
         
         // If player is black, AI should make the first move
@@ -530,31 +543,81 @@ class ChessUI {
 
     // Show hint for the player
     async showHint() {
-        if (this.game.currentPlayer !== this.playerColor || this.isThinking) return;
+        if (this.game.currentPlayer !== this.playerColor || this.isThinking) {
+            this.updateStatusMessage('Cannot show hint right now.');
+            return;
+        }
+
+        // Clear any existing hints
+        document.querySelectorAll('.hint-from, .hint-to').forEach(square => {
+            square.classList.remove('hint-from', 'hint-to');
+        });
 
         this.isThinking = true;
+        this.updateStatusMessage('Calculating best move...');
+        
         const hint = await new Promise((resolve) => {
             setTimeout(() => {
-                const move = this.ai.getHint(this.game);
+                // Fix the AI hint to work with current player color
+                const originalPlayer = this.game.currentPlayer;
+                this.game.currentPlayer = this.playerColor;
+                const move = this.ai.getBestMove(this.game);
+                this.game.currentPlayer = originalPlayer;
                 resolve(move);
             }, 100);
         });
+        
         this.isThinking = false;
 
-        if (hint) {
-            // Highlight the suggested move
-            this.highlightLastMove(hint.from, hint.to);
-            setTimeout(() => {
-                document.querySelectorAll('.last-move').forEach(square => {
-                    square.classList.remove('last-move');
-                });
-            }, 3000);
+        if (hint && hint.from && hint.to) {
+            // Highlight hint squares with special styling
+            const fromSquare = this.getSquareElement(hint.from[0], hint.from[1]);
+            const toSquare = this.getSquareElement(hint.to[0], hint.to[1]);
+            
+            if (fromSquare && toSquare) {
+                fromSquare.classList.add('hint-from');
+                toSquare.classList.add('hint-to');
+                
+                // Show hint message
+                const fromNotation = String.fromCharCode(97 + hint.from[1]) + (8 - hint.from[0]);
+                const toNotation = String.fromCharCode(97 + hint.to[1]) + (8 - hint.to[0]);
+                this.updateStatusMessage(`Hint: Try moving from ${fromNotation} to ${toNotation}`);
+                
+                // Remove hint highlighting after 4 seconds
+                setTimeout(() => {
+                    fromSquare.classList.remove('hint-from');
+                    toSquare.classList.remove('hint-to');
+                    this.updateStatusMessage('Your turn. Make your move!');
+                }, 4000);
+            }
+        } else {
+            this.updateStatusMessage('No good moves found. You might be in a difficult position!');
         }
     }
 
     // Change AI difficulty
     changeDifficulty(difficulty) {
-        this.ai.setDifficulty(parseInt(difficulty));
+        const difficultyLevel = parseInt(difficulty);
+        this.ai.setDifficulty(difficultyLevel);
+        
+        // Provide user feedback
+        const difficultyNames = {
+            1: 'Easy',
+            2: 'Medium', 
+            3: 'Hard',
+            4: 'Expert',
+            5: 'Master'
+        };
+        
+        const difficultyName = difficultyNames[difficultyLevel] || 'Unknown';
+        this.updateStatusMessage(`Difficulty changed to ${difficultyName}. The AI will now be ${difficultyLevel <= 2 ? 'more forgiving' : difficultyLevel >= 4 ? 'very challenging' : 'moderately challenging'}.`);
+        
+        // Clear the message after 3 seconds
+        setTimeout(() => {
+            if (this.game.currentPlayer === this.playerColor) {
+                this.updateStatusMessage('Your turn. Make your move!');
+            }
+        }, 3000);
     }
 
     // Change player color
@@ -665,4 +728,133 @@ class ChessUI {
         // In a full implementation, you'd play an actual sound file
         console.log('Game end sound played');
     }
+
+    // Change AI mode
+    changeAIMode(mode) {
+        this.aiMode = mode;
+        const difficulty = this.ai.difficulty || 2;
+        this.ai = mode === 'enhanced' ? new EnhancedChessAI(difficulty) : new ChessAI(difficulty);
+        console.log(`AI mode changed to: ${mode}`);
+    }
+
+
+
+    // Change player color
+    changePlayerColor(color) {
+        if (this.game.moveHistory.length > 0) {
+            if (!confirm('Changing color will start a new game. Continue?')) {
+                // Reset the select to current value
+                document.getElementById('player-color').value = this.playerColor;
+                return;
+            }
+        }
+        
+        this.playerColor = color === 'white' || color === 'WHITE' ? 'WHITE' : 'BLACK';
+        this.flipBoard(); // Flip board based on new player color
+        this.newGame();
+    }
+
+
+    // Highlight last move
+    highlightLastMove(from, to) {
+        // Remove previous highlights
+        document.querySelectorAll('.last-move').forEach(sq => {
+            sq.classList.remove('last-move');
+        });
+        
+        // Add new highlights
+        const fromSquare = this.getSquareElement(from[0], from[1]);
+        const toSquare = this.getSquareElement(to[0], to[1]);
+        
+        fromSquare.classList.add('last-move');
+        toSquare.classList.add('last-move');
+    }
+
+    // Show thinking indicator
+    showThinkingIndicator() {
+        const statusElement = document.getElementById('status-message');
+        if (statusElement) {
+            statusElement.textContent = '🤔 AI is thinking...';
+            statusElement.className = 'status-message thinking';
+        }
+    }
+
+    // Hide thinking indicator
+    hideThinkingIndicator() {
+        const statusElement = document.getElementById('status-message');
+        if (statusElement) {
+            statusElement.textContent = '';
+            statusElement.className = 'status-message';
+        }
+    }
+
+    // Update status message
+    updateStatusMessage(message, className = 'status-message') {
+        const statusElement = document.getElementById('status-message');
+        if (statusElement) {
+            statusElement.textContent = message;
+            statusElement.className = className;
+        }
+    }
+
+    // Flip the board for black player perspective
+    flipBoard() {
+        const chessboard = document.getElementById('chessboard');
+        const boardWrapper = document.querySelector('.board-wrapper');
+        
+        console.log(`flipBoard called: playerColor=${this.playerColor}, boardFlipped=${this.boardFlipped}`);
+        
+        if (this.playerColor === 'BLACK') {
+            // Always ensure black perspective
+            if (!chessboard.classList.contains('flipped')) {
+                chessboard.classList.add('flipped');
+                boardWrapper.classList.add('flipped');
+                this.boardFlipped = true;
+                console.log('Board flipped to BLACK perspective');
+            }
+        } else {
+            // Always ensure white perspective
+            if (chessboard.classList.contains('flipped')) {
+                chessboard.classList.remove('flipped');
+                boardWrapper.classList.remove('flipped');
+                this.boardFlipped = false;
+                console.log('Board flipped to WHITE perspective');
+            }
+        }
+    }
+
+
+    // Convert visual coordinates to logical coordinates when board is flipped
+    getLogicalCoordinates(visualRow, visualCol) {
+        if (this.boardFlipped) {
+            // When flipped, convert visual coordinates to logical coordinates
+            return {
+                row: 7 - visualRow,
+                col: 7 - visualCol
+            };
+        }
+        return {
+            row: visualRow,
+            col: visualCol
+        };
+    }
+
+    // Convert logical coordinates to visual coordinates when board is flipped
+    getVisualCoordinates(logicalRow, logicalCol) {
+        if (this.boardFlipped) {
+            // When flipped, convert logical coordinates to visual coordinates
+            return {
+                row: 7 - logicalRow,
+                col: 7 - logicalCol
+            };
+        }
+        return {
+            row: logicalRow,
+            col: logicalCol
+        };
+    }
+
 }
+
+// Export for module compatibility
+export { ChessUI };
